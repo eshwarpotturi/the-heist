@@ -217,7 +217,15 @@ def main():
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--workers", type=int, default=9)
     ap.add_argument("--out", default="docs/matches.json")
+    ap.add_argument("--list-models", action="store_true", help="print model ids available on HEIST_API_BASE")
     a = ap.parse_args()
+    if a.list_models:
+        req = urllib.request.Request(os.environ["HEIST_API_BASE"].rstrip("/") + "/models",
+                                     headers={"Authorization": "Bearer " + os.environ["HEIST_API_KEY"]})
+        ids = sorted(m["id"] for m in json.load(urllib.request.urlopen(req, timeout=60))["data"])
+        want = a.models.split(",") if a.models != "haiku,sonnet,opus" else ["gpt", "gemini", "claude"]
+        print("\n".join(i for i in ids if any(w in i.lower() for w in want)))
+        return
     models = a.models.split(",")
     jobs = [(g, t, s) for s in a.strengths.split(",") for g in models for t in models]
     if a.quick:
